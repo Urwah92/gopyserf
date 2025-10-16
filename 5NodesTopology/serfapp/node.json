@@ -1,0 +1,6 @@
+{
+  "node_name": "clab-century-serf1",
+  "bind": "0.0.0.0:7946",
+  "advertise": "10.0.1.11:7946",
+  "rpc_addr": "0.0.0.0:7373"
+}

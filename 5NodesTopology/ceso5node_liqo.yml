@@ -8,7 +8,7 @@ topology:
 
     serf1:
       kind: linux
-      image:  abdullahmuzlim279/k3s-serf-node:latest
+      image:  abdullahmuzlim279/k3s-serf-node:v1.1
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -28,16 +28,16 @@ topology:
           sudo install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl
           ip link set eth1 up
           ip addr add 10.0.1.11/24 brd 10.0.1.255 dev eth1
-          ip route del default via 172.20.20.1 dev eth0
-          ip route add default via 10.0.1.1 dev eth1 
+          #ip route del default via 172.20.20.1 dev eth0
+          #ip route add default via 10.0.1.1 dev eth1 
           sleep 15          
           sudo ip link set eth1 mtu 1400                  
           k3s server --node-name serf1 --disable traefik --disable-network-policy --snapshotter native &
           sleep 15
           chmod 666 /etc/rancher/k3s/k3s.yaml          
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-          ip route del default via 10.0.1.1 dev eth1
-          ip route add default via 172.20.20.1 dev eth0
+          #ip route del default via 10.0.1.1 dev eth1
+          #ip route add default via 172.20.20.1 dev eth0
           sleep 150        
           liqoctl install k3s --kubeconfig /etc/rancher/k3s/k3s.yaml --cluster-id serf1
           k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
@@ -53,7 +53,7 @@ topology:
 
     serf2:
       kind: linux
-      image:  abdullahmuzlim279/k3s-serf-node:latest
+      image:  abdullahmuzlim279/k3s-serf-node:v1.1
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -73,16 +73,16 @@ topology:
           sudo install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl
           ip link set eth1 up
           ip addr add 10.0.1.12/24 brd 10.0.1.255 dev eth1
-          ip route del default via 172.20.20.1 dev eth0
-          ip route add default via 10.0.1.1 dev eth1
+          #ip route del default via 172.20.20.1 dev eth0
+          #ip route add default via 10.0.1.1 dev eth1
           sleep 15  
           sudo ip link set eth1 mtu 1400                  
           k3s server --node-name serf1 --disable traefik --disable-network-policy --snapshotter native &
           sleep 15
           chmod 666 /etc/rancher/k3s/k3s.yaml          
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-          ip route del default via 10.0.1.1 dev eth1
-          ip route add default via 172.20.20.1 dev eth0
+          #ip route del default via 10.0.1.1 dev eth1
+          #ip route add default via 172.20.20.1 dev eth0
           sleep 150        
           liqoctl install k3s --kubeconfig /etc/rancher/k3s/k3s.yaml --cluster-id serf1
           k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
@@ -98,7 +98,7 @@ topology:
 
     serf3:
       kind: linux
-      image:  abdullahmuzlim279/k3s-serf-node:latest
+      image:  abdullahmuzlim279/k3s-serf-node:v1.1
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -118,16 +118,16 @@ topology:
           sudo install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl
           ip link set eth1 up
           ip addr add 10.0.1.13/24 brd 10.0.1.255 dev eth1
-          ip route del default via 172.20.20.1 dev eth0
-          ip route add default via 10.0.1.1 dev eth1 
+          #ip route del default via 172.20.20.1 dev eth0
+          #ip route add default via 10.0.1.1 dev eth1 
           sleep 15 
           sudo ip link set eth1 mtu 1400                  
           k3s server --node-name serf1 --disable traefik --disable-network-policy --snapshotter native &
           sleep 15
           chmod 666 /etc/rancher/k3s/k3s.yaml          
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-          ip route del default via 10.0.1.1 dev eth1
-          ip route add default via 172.20.20.1 dev eth0
+          #ip route del default via 10.0.1.1 dev eth1
+          #ip route add default via 172.20.20.1 dev eth0
           sleep 150        
           liqoctl install k3s --kubeconfig /etc/rancher/k3s/k3s.yaml --cluster-id serf1
           k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
@@ -143,7 +143,7 @@ topology:
 
     serf4:
       kind: linux
-      image:  abdullahmuzlim279/k3s-serf-node:latest
+      image:  abdullahmuzlim279/k3s-serf-node:v1.1
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -163,16 +163,16 @@ topology:
           sudo install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl
           ip link set eth1 up
           ip addr add 10.0.1.14/24 brd 10.0.1.255 dev eth1
-          ip route del default via 172.20.20.1 dev eth0
-          ip route add default via 10.0.1.1 dev eth1 
+          #ip route del default via 172.20.20.1 dev eth0
+          #ip route add default via 10.0.1.1 dev eth1 
           sleep 15 
           sudo ip link set eth1 mtu 1400                  
           k3s server --node-name serf1 --disable traefik --disable-network-policy --snapshotter native &
           sleep 15
           chmod 666 /etc/rancher/k3s/k3s.yaml          
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-          ip route del default via 10.0.1.1 dev eth1
-          ip route add default via 172.20.20.1 dev eth0
+          #ip route del default via 10.0.1.1 dev eth1
+          #ip route add default via 172.20.20.1 dev eth0
           sleep 150        
           liqoctl install k3s --kubeconfig /etc/rancher/k3s/k3s.yaml --cluster-id serf1
           k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
@@ -188,7 +188,7 @@ topology:
 
     serf5:
       kind: linux
-      image:  abdullahmuzlim279/k3s-serf-node:latest
+      image:  abdullahmuzlim279/k3s-serf-node:v1.1
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -208,16 +208,16 @@ topology:
           sudo install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl
           ip link set eth1 up
           ip addr add 10.0.1.15/24 brd 10.0.1.255 dev eth1
-          ip route del default via 172.20.20.1 dev eth0
-          ip route add default via 10.0.1.1 dev eth1 
+          #ip route del default via 172.20.20.1 dev eth0
+          #ip route add default via 10.0.1.1 dev eth1 
           sleep 15 
           sudo ip link set eth1 mtu 1400                  
           k3s server --node-name serf1 --disable traefik --disable-network-policy --snapshotter native &
           sleep 15
           chmod 666 /etc/rancher/k3s/k3s.yaml          
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-          ip route del default via 10.0.1.1 dev eth1
-          ip route add default via 172.20.20.1 dev eth0
+          #ip route del default via 10.0.1.1 dev eth1
+          #ip route add default via 172.20.20.1 dev eth0
           sleep 150        
           liqoctl install k3s --kubeconfig /etc/rancher/k3s/k3s.yaml --cluster-id serf1
           k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml

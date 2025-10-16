@@ -1,0 +1,2 @@
+maximum_iteration=      500    # it takes int values 
+num_agents=    40             # it takes int values

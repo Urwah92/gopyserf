@@ -1,0 +1,8 @@
+node_port=        5000                # require integer value
+max_latency= 25                      # require integer value
+join_retry=   10                      # require integer value, when CH is not accessible, the client retires
+delay_between_join_retry=   0.01      # require float value, seconds
+socket_timeout= 5                     # require float value, seconds
+ping_retries=   3                     # require integer value
+
+

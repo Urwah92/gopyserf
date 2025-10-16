@@ -1,41 +1,47 @@
 #!/bin/bash
+set -euo pipefail
 
-# List of containers (Ubuntu nodes for 100 nodes)
+# ---------- CONFIG ----------
+# Containers to target
 containers=()
 for i in {1..5}; do
   containers+=(clab-century-serf$i)
 done
 
-# Paths and file names
-json_file="node.json"
-binary_file="serf"      # Use the full path to the serf binary
-pytogo_binary="pytogoapi"  # This is the binary file for pytogo
-destination_dir="/opt/serfapp"
+# Local source dir (host)
+SERFAPP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/serfapp"
 
-# Function to set up Ubuntu nodes
+# Remote destination dir (in containers)
+destination_dir="/opt/serfapp"
+# ----------------------------
+
+require() { command -v "$1" >/dev/null 2>&1 || { echo "Missing: $1"; exit 1; }; }
+require docker
+require tar
+
 setup_ubuntu_nodes() {
-  for i in "${!containers[@]}"; do
-    container="${containers[$i]}"
-    
-    # Check if container is running
-    if ! docker ps --format '{{.Names}}' | grep -q "$container"; then
+  for container in "${containers[@]}"; do
+    # Check running
+    if ! docker ps --format '{{.Names}}' | grep -qx "$container"; then
       echo "Container $container is not running, skipping..."
       continue
     fi
-    
     echo "Setting up $container..."
 
-    # Get the IP address of the eth1 interface directly from within the container
-    ip_address=$(docker exec "$container" ip -4 addr show eth1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
-    if [ -z "$ip_address" ]; then
-      echo "Failed to retrieve IP address for $container"
+    # Get eth1 IPv4
+    ip_address="$(docker exec "$container" sh -lc "ip -4 addr show eth1 | awk '/inet /{print \$2}' | cut -d/ -f1" || true)"
+    if [[ -z "${ip_address}" ]]; then
+      echo "Failed to retrieve eth1 IP for $container, skipping..."
       continue
     fi
-    
     echo "IP address for $container (eth1): $ip_address"
-    
-    # Generate the JSON configuration file dynamically
-    json_content=$(cat <<EOF
+
+    # Create destination dir
+    docker exec "$container" mkdir -p "$destination_dir"
+
+    # Generate node.json (fresh per container)
+    tmp_json="$(mktemp)"
+    cat > "$tmp_json" <<EOF
 {
   "node_name": "$container",
   "bind": "0.0.0.0:7946",
@@ -43,38 +49,35 @@ setup_ubuntu_nodes() {
   "rpc_addr": "0.0.0.0:7373"
 }
 EOF
-)
-    
-    # Create a temporary JSON file on the host
-    temp_json_file=$(mktemp)
-    echo "$json_content" > "$temp_json_file"
+    docker cp "$tmp_json" "$container":"$destination_dir/node.json"
+    rm -f "$tmp_json"
 
-    # Create the destination directory inside the container
-    docker exec "$container" mkdir -p "$destination_dir"
+    # Copy serfapp/ contents, excluding __pycache__ and *.log
+    (
+      cd "$SERFAPP_DIR"
+      tar \
+        --exclude='__pycache__' \
+        --exclude='*/__pycache__' \
+        --exclude='*.log' \
+        --exclude='*.log.*' \
+        -czf - .
+    ) | docker exec -i "$container" tar -C "$destination_dir" -xzf -
 
-    # Copy the generated JSON file and serf binary into the /opt/serfapp/ directory
-    docker cp "$temp_json_file" "$container":"$destination_dir/node.json" || { echo "Failed to copy node.json to $container"; exit 1; }
-    docker cp "$binary_file" "$container":"$destination_dir/" || { echo "Failed to copy serf binary to $container"; exit 1; }
-
-    # Create the pytogo directory inside the container
-    docker exec "$container" mkdir -p "$destination_dir/pytogo"
-
-    # Copy the pytogo binary file into the pytogo directory
-    docker cp "$pytogo_binary" "$container":"$destination_dir/pytogo/" || { echo "Failed to copy pytogo binary to $container"; exit 1; }
-
-    # Make the serf binary executable
-    docker exec "$container" chmod +x "$destination_dir/$binary_file" || { echo "Failed to make serf executable on $container"; exit 1; }
-    
-    # Make the pytogo binary executable
-    docker exec "$container" chmod +x "$destination_dir/pytogo/$pytogo_binary" || { echo "Failed to make pytogo binary executable on $container"; exit 1; }
-
-    # Remove the temporary JSON file
-    rm "$temp_json_file"
+    # Ensure exec bits on expected scripts/binaries (best-effort)
+    docker exec "$container" sh -lc "
+      # Make top-level .sh and .py executable
+      find '$destination_dir' -maxdepth 1 -type f -name '*.sh' -exec chmod +x {} + 2>/dev/null || true
+      find '$destination_dir' -maxdepth 1 -type f -name '*.py' -exec chmod +x {} + 2>/dev/null || true
+      # Make any start_*.sh anywhere executable
+      find '$destination_dir' -type f -name 'start_*.sh' -exec chmod +x {} + 2>/dev/null || true
+      # Make serf binary executable if present (now inside serfapp/)
+      [ -f '$destination_dir/serf' ] && chmod +x '$destination_dir/serf' || true
+    "
 
     echo "$container setup complete."
   done
 }
 
-# Main script execution
+# Main
 setup_ubuntu_nodes
 
