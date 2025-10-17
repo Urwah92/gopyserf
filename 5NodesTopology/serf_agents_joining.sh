@@ -5,7 +5,7 @@ joining_node="clab-century-serf1"
 
 # List of containers (Ubuntu nodes from 2 to 100)
 containers=()
-for i in {2..5}; do
+for i in {1..5}; do
   containers+=(clab-century-serf$i)
 done
 
@@ -38,4 +38,7 @@ echo "$join_command"
 docker exec "$joining_node" bash -c "$join_command"
 
 echo "Cluster joined successfully."
+
+
+
 

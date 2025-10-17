@@ -8,22 +8,170 @@ topology:
 
     serf1:
       kind: linux
-      image: anjummalik/ubuntu-with-serf-compatability
+      image:  abdullahmuzlim279/k3s-serf-node:latest
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            curl -Lo /usr/local/bin/liqoctl https://github.com/liqotech/liqo/releases/latest/download/liqoctl-linux-amd64 &&
+            chmod +x /usr/local/bin/liqoctl &&
+            pip3 install flask requests kubernetes
+          )
+          k3s server --node-name serf1 --disable traefik --disable-network-policy --snapshotter native --tls-san 10.0.1.11 &
+          sleep 15
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          sed -i "s#127.0.0.1#10.0.1.11#g" $KUBECONFIG
+          liqoctl install k3s --kubeconfig $KUBECONFIG --cluster-id serf1 --disable-telemetry --verbose
+          k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
+          k3s kubectl apply -f /tmp/service-account.yaml
+          k3s kubectl apply -f /tmp/cluster-role.yaml
+          k3s kubectl apply -f /tmp/cluster-role-binding.yaml
+          k3s kubectl apply -f /tmp/deployment-scheduler.yaml
+          sleep infinity
+        '
+
     serf2:
       kind: linux
-      image: anjummalik/ubuntu-with-serf-compatability
+      image:  abdullahmuzlim279/k3s-serf-node:latest
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            curl -Lo /usr/local/bin/liqoctl https://github.com/liqotech/liqo/releases/latest/download/liqoctl-linux-amd64 &&
+            chmod +x /usr/local/bin/liqoctl &&
+            pip3 install flask requests kubernetes
+          )
+          k3s server --node-name serf2 --disable traefik --disable-network-policy --snapshotter native --tls-san 10.0.1.12 &
+          sleep 15
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          sed -i "s#127.0.0.1#10.0.1.12#g" $KUBECONFIG
+          liqoctl install k3s --kubeconfig $KUBECONFIG --cluster-id serf2 --disable-telemetry --verbose
+          k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
+          k3s kubectl apply -f /tmp/service-account.yaml
+          k3s kubectl apply -f /tmp/cluster-role.yaml
+          k3s kubectl apply -f /tmp/cluster-role-binding.yaml
+          k3s kubectl apply -f /tmp/deployment-scheduler.yaml
+          sleep infinity
+        '
+
     serf3:
       kind: linux
-      image: anjummalik/ubuntu-with-serf-compatability
+      image:  abdullahmuzlim279/k3s-serf-node:latest
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            curl -Lo /usr/local/bin/liqoctl https://github.com/liqotech/liqo/releases/latest/download/liqoctl-linux-amd64 &&
+            chmod +x /usr/local/bin/liqoctl &&
+            pip3 install flask requests kubernetes
+          )
+          k3s server --node-name serf3 --disable traefik --disable-network-policy --snapshotter native --tls-san 10.0.1.13 &
+          sleep 15
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          sed -i "s#127.0.0.1#10.0.1.13#g" $KUBECONFIG
+          liqoctl install k3s --kubeconfig $KUBECONFIG --cluster-id serf3 --disable-telemetry --verbose
+          k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
+          k3s kubectl apply -f /tmp/service-account.yaml
+          k3s kubectl apply -f /tmp/cluster-role.yaml
+          k3s kubectl apply -f /tmp/cluster-role-binding.yaml
+          k3s kubectl apply -f /tmp/deployment-scheduler.yaml
+          sleep infinity
+        '
+
     serf4:
       kind: linux
-      image: anjummalik/ubuntu-with-serf-compatability
+      image:  abdullahmuzlim279/k3s-serf-node:latest
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            curl -Lo /usr/local/bin/liqoctl https://github.com/liqotech/liqo/releases/latest/download/liqoctl-linux-amd64 &&
+            chmod +x /usr/local/bin/liqoctl &&
+            pip3 install flask requests kubernetes
+          )
+          k3s server --node-name serf4 --disable traefik --disable-network-policy --snapshotter native --tls-san 10.0.1.14 &
+          sleep 15
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          sed -i "s#127.0.0.1#10.0.1.14#g" $KUBECONFIG
+          liqoctl install k3s --kubeconfig $KUBECONFIG --cluster-id serf4 --disable-telemetry --verbose
+          k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
+          k3s kubectl apply -f /tmp/service-account.yaml
+          k3s kubectl apply -f /tmp/cluster-role.yaml
+          k3s kubectl apply -f /tmp/cluster-role-binding.yaml
+          k3s kubectl apply -f /tmp/deployment-scheduler.yaml
+          sleep infinity
+        '
+
     serf5:
       kind: linux
-      image: anjummalik/ubuntu-with-serf-compatability
-    
+      image:  abdullahmuzlim279/k3s-serf-node:latest
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            curl -Lo /usr/local/bin/liqoctl https://github.com/liqotech/liqo/releases/latest/download/liqoctl-linux-amd64 &&
+            chmod +x /usr/local/bin/liqoctl &&
+            pip3 install flask requests kubernetes
+          )
+          k3s server --node-name serf5 --disable traefik --disable-network-policy --snapshotter native --tls-san 10.0.1.15 &
+          sleep 15
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          sed -i "s#127.0.0.1#10.0.1.15#g" $KUBECONFIG
+          liqoctl install k3s --kubeconfig $KUBECONFIG --cluster-id serf5 --disable-telemetry --verbose
+          k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
+          k3s kubectl apply -f /tmp/service-account.yaml
+          k3s kubectl apply -f /tmp/cluster-role.yaml
+          k3s kubectl apply -f /tmp/cluster-role-binding.yaml
+          k3s kubectl apply -f /tmp/deployment-scheduler.yaml
+          sleep infinity
+        '
+
   links:
-    # Central switch to serf nodes
     - endpoints: ["central_switch:eth1", "serf1:eth1"]
     - endpoints: ["central_switch:eth2", "serf2:eth1"]
     - endpoints: ["central_switch:eth3", "serf3:eth1"]
