@@ -346,7 +346,9 @@ def join_wan_cluster(ip, my_wan_port, wan_rpc):
     f"-rpc-addr=127.0.0.1:{wan_rpc} "
     f" {ip}:{my_wan_port}"
     )  
-
+    run_cmd(
+    f" ./ch_broker"
+    )
 
 #---------------------------------------------------------------------------------------------------------------
 def  handling_200(input_str):

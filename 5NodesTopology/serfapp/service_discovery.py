@@ -10,13 +10,15 @@ RTT-first, then raw-Hilbert widening. At each step:
 NO merging local+remote results; preference is strictly local-first on each step.
 
 Example:
-  python3 multi_stage_hilbert_router_rtt_then_hilbert_http.py \
+  python3 service_discovery.py \
     --query-node clab-century-serf2 \
-    --geom-url http://172.20.20.3:4040/cluster-status \
+    --geom-url http://172.20.20.7:4040/cluster-status \
     --rtt-threshold-ms 12 \
     --pct-start 0.02 --max-steps 6 \
-    --min-cpu 16 --min-ram 32 --min-storage 1000 --min-gpu 1 --max-price 50 \
-    --sort score --limit 10 \
+    --min-cpu 16 --min-ram 32 --min-storage 1000 --min-gpu 1 \
+    --budget-per-cpu 3 --budget-per-ram 1 --budget-per-storage 0.01 --budget-per-gpu 10 \
+    --min-score-per-cpu 0.7 --min-score-per-ram 0.5 --min-score-per-storage 0.5 --min-score-per-gpu 0.6 \
+    --sort score_per_cpu --limit 10 \
     --rpc-addr 127.0.0.1:7373 --timeout-s 8 \
     --http-serve --http-host 0.0.0.0 --http-port 4041 --http-path /hilbert-output
 
@@ -78,9 +80,15 @@ def _to_float(v) -> float:
 def get_lan_members(rpc_addr: str) -> pd.DataFrame:
     """
     Returns local members (no -wan) with ip + resource tags.
-    Columns: name, ip, cpu, ram, storage, gpu, price, score
+    Columns: name, ip, cpu, ram, storage, gpu,
+             price_per_cpu, price_per_ram, price_per_storage, price_per_gpu,
+             score_per_cpu, score_per_ram, score_per_storage, score_per_gpu
     """
-    cols = ["name","ip","cpu","ram","storage","gpu","price","score"]
+    cols = [
+        "name","ip","cpu","ram","storage","gpu",
+        "price_per_cpu","price_per_ram","price_per_storage","price_per_gpu",
+        "score_per_cpu","score_per_ram","score_per_storage","score_per_gpu"
+    ]
     try:
         out = subprocess.run(
             ["./serf","members",f"-rpc-addr={rpc_addr}","-format=json"],
@@ -111,8 +119,14 @@ def get_lan_members(rpc_addr: str) -> pd.DataFrame:
             "ram": _to_int(tags.get("ram")),
             "storage": _to_int(tags.get("storage")),
             "gpu": _to_int(tags.get("gpu")),
-            "price": _to_float(tags.get("price")),
-            "score": _to_float(tags.get("score")),
+            "price_per_cpu": _to_float(tags.get("price_per_cpu")),
+            "price_per_ram": _to_float(tags.get("price_per_ram")),
+            "price_per_storage": _to_float(tags.get("price_per_storage")),
+            "price_per_gpu": _to_float(tags.get("price_per_gpu")),
+            "score_per_cpu": _to_float(tags.get("score_per_cpu")),
+            "score_per_ram": _to_float(tags.get("score_per_ram")),
+            "score_per_storage": _to_float(tags.get("score_per_storage")),
+            "score_per_gpu": _to_float(tags.get("score_per_gpu")),
         })
     return pd.DataFrame(rows, columns=cols)
 
@@ -123,13 +137,21 @@ def _print_names(title: str, names: List[str]):
     else:
         print(f"{title} ({len(names)}): " + ", ".join(names))
 
-def ask_cluster_head_for_remote(min_cpu:int, min_ram:int, min_storage:int, min_gpu:int, max_price:float,
-                                wanted_names: List[str], rpc_addr:str, timeout_s:int) -> pd.DataFrame:
+def ask_cluster_head_for_remote(
+    min_cpu:int, min_ram:int, min_storage:int, min_gpu:int,
+    wanted_names: List[str], rpc_addr:str, timeout_s:int,
+    budget_cpu:float, budget_ram:float, budget_storage:float, budget_gpu:float,
+    min_sc_cpu:float, min_sc_ram:float, min_sc_storage:float, min_sc_gpu:float
+) -> pd.DataFrame:
     """
     Ask CH (via serf query) for resources for wanted_names (non-local).
-    Returns columns: name, ip, cpu, ram, storage, gpu, price, score
+    Returns columns incl. per-unit price and score if provided by CH.
     """
-    cols = ["name","ip","cpu","ram","storage","gpu","price","score"]
+    cols = [
+        "name","ip","cpu","ram","storage","gpu",
+        "price_per_cpu","price_per_ram","price_per_storage","price_per_gpu",
+        "score_per_cpu","score_per_ram","score_per_storage","score_per_gpu"
+    ]
     if not wanted_names:
         return pd.DataFrame(columns=cols)
 
@@ -138,7 +160,16 @@ def ask_cluster_head_for_remote(min_cpu:int, min_ram:int, min_storage:int, min_g
         **({"min_ram":min_ram} if min_ram>0 else {}),
         **({"min_storage":min_storage} if min_storage>0 else {}),
         **({"min_gpu":min_gpu} if min_gpu>0 else {}),
-        **({"max_price":max_price} if max_price>0 else {}),
+        # per-unit budgets
+        **({"budget_per_cpu":budget_cpu} if budget_cpu>0 else {}),
+        **({"budget_per_ram":budget_ram} if budget_ram>0 else {}),
+        **({"budget_per_storage":budget_storage} if budget_storage>0 else {}),
+        **({"budget_per_gpu":budget_gpu} if budget_gpu>0 else {}),
+        # per-unit score floors
+        **({"min_score_per_cpu":min_sc_cpu} if min_sc_cpu>0 else {}),
+        **({"min_score_per_ram":min_sc_ram} if min_sc_ram>0 else {}),
+        **({"min_score_per_storage":min_sc_storage} if min_sc_storage>0 else {}),
+        **({"min_score_per_gpu":min_sc_gpu} if min_sc_gpu>0 else {}),
         "request_id": "TRACE-HILBERT",
         "wanted_names": wanted_names,
     }
@@ -153,7 +184,11 @@ def ask_cluster_head_for_remote(min_cpu:int, min_ram:int, min_storage:int, min_g
         return pd.DataFrame(columns=cols)
 
 def parse_ch_answer(text: str, allow: set) -> pd.DataFrame:
-    cols = ["name","ip","cpu","ram","storage","gpu","price","score"]
+    cols = [
+        "name","ip","cpu","ram","storage","gpu",
+        "price_per_cpu","price_per_ram","price_per_storage","price_per_gpu",
+        "score_per_cpu","score_per_ram","score_per_storage","score_per_gpu"
+    ]
     try:
         data = json.loads(text)
     except Exception:
@@ -188,8 +223,15 @@ def parse_ch_answer(text: str, allow: set) -> pd.DataFrame:
                 "ram": _to_int(rec.get("ram") or rec.get("RAM")),
                 "storage": _to_int(rec.get("storage") or rec.get("Storage")),
                 "gpu": _to_int(rec.get("gpu") or rec.get("GPU")),
-                "price": _to_float(rec.get("price") or rec.get("Price")),
-                "score": _to_float(rec.get("score") or rec.get("Score")),
+                # per-unit fields (snake_case or CamelCase)
+                "price_per_cpu": _to_float(rec.get("price_per_cpu") or rec.get("PricePerCPU")),
+                "price_per_ram": _to_float(rec.get("price_per_ram") or rec.get("PricePerRAM")),
+                "price_per_storage": _to_float(rec.get("price_per_storage") or rec.get("PricePerStorage")),
+                "price_per_gpu": _to_float(rec.get("price_per_gpu") or rec.get("PricePerGPU")),
+                "score_per_cpu": _to_float(rec.get("score_per_cpu") or rec.get("ScorePerCPU")),
+                "score_per_ram": _to_float(rec.get("score_per_ram") or rec.get("ScorePerRAM")),
+                "score_per_storage": _to_float(rec.get("score_per_storage") or rec.get("ScorePerStorage")),
+                "score_per_gpu": _to_float(rec.get("score_per_gpu") or rec.get("ScorePerGPU")),
             })
 
     if not nodes:
@@ -246,29 +288,56 @@ class HilbertIndex:
         return [n for n in out if n != query and "-wan" not in n.lower()]
 
 # ------------------------- Filtering --------------------------
-def filter_by_resources(df: pd.DataFrame, min_cpu:int, min_ram:int,
-                        min_storage:int, min_gpu:int, max_price:float) -> pd.DataFrame:
+def _nan_to_inf(series: pd.Series) -> pd.Series:
+    return series.where(~series.isna(), float("inf"))
+
+def _nan_to_zero(series: pd.Series) -> pd.Series:
+    return series.where(~series.isna(), 0.0)
+
+def filter_by_resources(
+    df: pd.DataFrame, min_cpu:int, min_ram:int, min_storage:int, min_gpu:int,
+    budget_cpu:float=0.0, budget_ram:float=0.0, budget_storage:float=0.0, budget_gpu:float=0.0,
+    min_sc_cpu:float=0.0, min_sc_ram:float=0.0, min_sc_storage:float=0.0, min_sc_gpu:float=0.0
+) -> pd.DataFrame:
     if df.empty: return df
     x = df.copy()
-    price_cmp = x["price"].where(~x["price"].isna(), float("inf"))
+
+    # Per-unit price caps: treat NaN as +inf (won't pass a cap unless cap<=0)
+    ppc  = _nan_to_inf(x.get("price_per_cpu",      pd.Series(index=x.index, dtype=float)))
+    ppr  = _nan_to_inf(x.get("price_per_ram",      pd.Series(index=x.index, dtype=float)))
+    ppst = _nan_to_inf(x.get("price_per_storage",  pd.Series(index=x.index, dtype=float)))
+    ppg  = _nan_to_inf(x.get("price_per_gpu",      pd.Series(index=x.index, dtype=float)))
+
+    # Per-unit score floors: treat NaN as 0.0 (fails if a positive floor is requested)
+    sc_cpu  = _nan_to_zero(x.get("score_per_cpu",      pd.Series(index=x.index, dtype=float)))
+    sc_ram  = _nan_to_zero(x.get("score_per_ram",      pd.Series(index=x.index, dtype=float)))
+    sc_sto  = _nan_to_zero(x.get("score_per_storage",  pd.Series(index=x.index, dtype=float)))
+    sc_gpu  = _nan_to_zero(x.get("score_per_gpu",      pd.Series(index=x.index, dtype=float)))
+
     mask = (
         ((min_cpu<=0)     | (x["cpu"]     >= min_cpu)) &
         ((min_ram<=0)     | (x["ram"]     >= min_ram)) &
         ((min_storage<=0) | (x["storage"] >= min_storage)) &
         ((min_gpu<=0)     | (x["gpu"]     >= min_gpu)) &
-        ((max_price<=0)   | (price_cmp    <= max_price))
+        ((budget_cpu<=0)      | (ppc  <= budget_cpu)) &
+        ((budget_ram<=0)      | (ppr  <= budget_ram)) &
+        ((budget_storage<=0)  | (ppst <= budget_storage)) &
+        ((budget_gpu<=0)      | (ppg  <= budget_gpu)) &
+        ((min_sc_cpu<=0)      | (sc_cpu >= min_sc_cpu)) &
+        ((min_sc_ram<=0)      | (sc_ram >= min_sc_ram)) &
+        ((min_sc_storage<=0)  | (sc_sto >= min_sc_storage)) &
+        ((min_sc_gpu<=0)      | (sc_gpu >= min_sc_gpu))
     )
     return x.loc[mask].copy()
 
 def sort_candidates(x: pd.DataFrame, key: str) -> pd.DataFrame:
-    if x.empty: return x
-    if key == "score":   return x.sort_values(by=["score","name"],   ascending=[False,True])
-    if key == "cpu":     return x.sort_values(by=["cpu","name"],     ascending=[False,True])
-    if key == "ram":     return x.sort_values(by=["ram","name"],     ascending=[False,True])
-    if key == "storage": return x.sort_values(by=["storage","name"], ascending=[False,True])
-    if key == "gpu":     return x.sort_values(by=["gpu","name"],     ascending=[False,True])
-    if key == "price":   return x.sort_values(by=["price","name"],   ascending=[True,True])
-    return x
+    if x.empty or key == "none": 
+        return x
+    # Sorting rules: higher is better for resources and scores; lower is better for prices.
+    ascending = True
+    if key in {"cpu","ram","storage","gpu","score_per_cpu","score_per_ram","score_per_storage","score_per_gpu"}:
+        ascending = False
+    return x.sort_values(by=[key,"name"], ascending=[ascending, True])
 
 # ----------------------- HTTP serving -------------------------
 def serve_json_forever(payload: dict, host: str, port: int, path: str):
@@ -333,8 +402,25 @@ def main():
     ap.add_argument("--min-ram", type=int, default=0)
     ap.add_argument("--min-storage", type=int, default=0)
     ap.add_argument("--min-gpu", type=int, default=0)
-    ap.add_argument("--max-price", type=float, default=0.0)
-    ap.add_argument("--sort", choices=["score","cpu","ram","storage","gpu","price","none"], default="score")
+
+    # Per-unit price budgets (caps)
+    ap.add_argument("--budget-per-cpu", type=float, default=0.0)
+    ap.add_argument("--budget-per-ram", type=float, default=0.0)
+    ap.add_argument("--budget-per-storage", type=float, default=0.0)
+    ap.add_argument("--budget-per-gpu", type=float, default=0.0)
+
+    # Score filters (per-unit score minimums)
+    ap.add_argument("--min-score-per-cpu", type=float, default=0.0)
+    ap.add_argument("--min-score-per-ram", type=float, default=0.0)
+    ap.add_argument("--min-score-per-storage", type=float, default=0.0)
+    ap.add_argument("--min-score-per-gpu", type=float, default=0.0)
+
+    ap.add_argument("--sort", choices=[
+        "none",
+        "cpu","ram","storage","gpu",
+        "price_per_cpu","price_per_ram","price_per_storage","price_per_gpu",
+        "score_per_cpu","score_per_ram","score_per_storage","score_per_gpu"
+    ], default="score_per_cpu")
     ap.add_argument("--limit", type=int, default=0)
 
     # Debug + HTTP
@@ -370,11 +456,26 @@ def main():
     _print_names("• RTT local names", local_names)
     _print_names("• RTT remote names", remote_names)
 
+    # Shorthands
+    b_cpu, b_ram, b_sto, b_gpu = (
+        args.budget_per_cpu, args.budget_per_ram, args.budget_per_storage, args.budget_per_gpu
+    )
+    sc_cpu, sc_ram, sc_sto, sc_gpu = (
+        args.min_score_per_cpu, args.min_score_per_ram, args.min_score_per_storage, args.min_score_per_gpu
+    )
+
     # A1) Local first
     if local_names:
-        local_view = lan_df[lan_df["name"].isin(local_names)][["name","ip","cpu","ram","storage","gpu","price","score"]].copy()
+        local_view = lan_df[lan_df["name"].isin(local_names)][[
+            "name","ip","cpu","ram","storage","gpu",
+            "price_per_cpu","price_per_ram","price_per_storage","price_per_gpu",
+            "score_per_cpu","score_per_ram","score_per_storage","score_per_gpu"
+        ]].copy()
         local_view["origin"] = "local"
-        local_pass = filter_by_resources(local_view, args.min_cpu, args.min_ram, args.min_storage, args.min_gpu, args.max_price)
+        local_pass = filter_by_resources(
+            local_view, args.min_cpu, args.min_ram, args.min_storage, args.min_gpu,
+            b_cpu, b_ram, b_sto, b_gpu, sc_cpu, sc_ram, sc_sto, sc_gpu
+        )
         if not local_pass.empty:
             out = sort_candidates(local_pass, args.sort) if args.sort != "none" else local_pass
             if args.limit > 0: out = out.head(args.limit)
@@ -386,7 +487,10 @@ def main():
                 "results": out.fillna(np.nan).replace({np.nan: None}).to_dict(orient="records")
             }
             print("\n=== RESULTS (RTT local) ===")
-            cols = ["ip","origin","cpu","ram","storage","gpu","price","score","rtt_to_query"]
+            cols = ["ip","origin","cpu","ram","storage","gpu",
+                    "price_per_cpu","price_per_ram","price_per_storage","price_per_gpu",
+                    "score_per_cpu","score_per_ram","score_per_storage","score_per_gpu",
+                    "rtt_to_query"]
             print(pd.DataFrame(payload["results"]).set_index("name")[cols].to_string())
             if args.http_serve: serve_json_forever(payload, args.http_host, args.http_port, args.http_path)
             return
@@ -394,12 +498,17 @@ def main():
     # A2) Remote via CH if locals didn't satisfy
     if remote_names:
         remote_view = ask_cluster_head_for_remote(
-            args.min_cpu, args.min_ram, args.min_storage, args.min_gpu, args.max_price,
-            wanted_names=remote_names, rpc_addr=args.rpc_addr, timeout_s=args.timeout_s
+            args.min_cpu, args.min_ram, args.min_storage, args.min_gpu,
+            wanted_names=remote_names, rpc_addr=args.rpc_addr, timeout_s=args.timeout_s,
+            budget_cpu=b_cpu, budget_ram=b_ram, budget_storage=b_sto, budget_gpu=b_gpu,
+            min_sc_cpu=sc_cpu, min_sc_ram=sc_ram, min_sc_storage=sc_sto, min_sc_gpu=sc_gpu
         )
         if not remote_view.empty:
             remote_view["origin"] = "wan"
-            remote_pass = filter_by_resources(remote_view, args.min_cpu, args.min_ram, args.min_storage, args.min_gpu, args.max_price)
+            remote_pass = filter_by_resources(
+                remote_view, args.min_cpu, args.min_ram, args.min_storage, args.min_gpu,
+                b_cpu, b_ram, b_sto, b_gpu, sc_cpu, sc_ram, sc_sto, sc_gpu
+            )
             if not remote_pass.empty:
                 out = sort_candidates(remote_pass, args.sort) if args.sort != "none" else remote_pass
                 if args.limit > 0: out = out.head(args.limit)
@@ -411,7 +520,10 @@ def main():
                     "results": out.fillna(np.nan).replace({np.nan: None}).to_dict(orient="records")
                 }
                 print("\n=== RESULTS (RTT remote via CH) ===")
-                cols = ["ip","origin","cpu","ram","storage","gpu","price","score","rtt_to_query"]
+                cols = ["ip","origin","cpu","ram","storage","gpu",
+                        "price_per_cpu","price_per_ram","price_per_storage","price_per_gpu",
+                        "score_per_cpu","score_per_ram","score_per_storage","score_per_gpu",
+                        "rtt_to_query"]
                 print(pd.DataFrame(payload["results"]).set_index("name")[cols].to_string())
                 if args.http_serve: serve_json_forever(payload, args.http_host, args.http_port, args.http_path)
                 return
@@ -442,9 +554,16 @@ def main():
 
         # B1) LOCAL first for this window
         if local_names:
-            local_view = lan_df[lan_df["name"].isin(local_names)][["name","ip","cpu","ram","storage","gpu","price","score"]].copy()
+            local_view = lan_df[lan_df["name"].isin(local_names)][[
+                "name","ip","cpu","ram","storage","gpu",
+                "price_per_cpu","price_per_ram","price_per_storage","price_per_gpu",
+                "score_per_cpu","score_per_ram","score_per_storage","score_per_gpu"
+            ]].copy()
             local_view["origin"] = "local"
-            local_pass = filter_by_resources(local_view, args.min_cpu, args.min_ram, args.min_storage, args.min_gpu, args.max_price)
+            local_pass = filter_by_resources(
+                local_view, args.min_cpu, args.min_ram, args.min_storage, args.min_gpu,
+                b_cpu, b_ram, b_sto, b_gpu, sc_cpu, sc_ram, sc_sto, sc_gpu
+            )
             if not local_pass.empty:
                 out = sort_candidates(local_pass, args.sort) if args.sort != "none" else local_pass
                 if args.limit > 0: out = out.head(args.limit)
@@ -457,7 +576,9 @@ def main():
                     "results": out.fillna(np.nan).replace({np.nan: None}).to_dict(orient="records"),
                 }
                 print("\n=== RESULTS (Hilbert window LOCAL) ===")
-                cols = ["ip","origin","cpu","ram","storage","gpu","price","score"]
+                cols = ["ip","origin","cpu","ram","storage","gpu",
+                        "price_per_cpu","price_per_ram","price_per_storage","price_per_gpu",
+                        "score_per_cpu","score_per_ram","score_per_storage","score_per_gpu"]
                 print(pd.DataFrame(payload["results"]).set_index("name")[cols].to_string())
                 if args.http_serve: serve_json_forever(payload, args.http_host, args.http_port, args.http_path)
                 return
@@ -465,12 +586,17 @@ def main():
         # B2) REMOTE via CH for this window (only if locals failed)
         if remote_names:
             remote_view = ask_cluster_head_for_remote(
-                args.min_cpu, args.min_ram, args.min_storage, args.min_gpu, args.max_price,
-                wanted_names=remote_names, rpc_addr=args.rpc_addr, timeout_s=args.timeout_s
+                args.min_cpu, args.min_ram, args.min_storage, args.min_gpu,
+                wanted_names=remote_names, rpc_addr=args.rpc_addr, timeout_s=args.timeout_s,
+                budget_cpu=b_cpu, budget_ram=b_ram, budget_storage=b_sto, budget_gpu=b_gpu,
+                min_sc_cpu=sc_cpu, min_sc_ram=sc_ram, min_sc_storage=sc_sto, min_sc_gpu=sc_gpu
             )
             if not remote_view.empty:
                 remote_view["origin"] = "wan"
-                remote_pass = filter_by_resources(remote_view, args.min_cpu, args.min_ram, args.min_storage, args.min_gpu, args.max_price)
+                remote_pass = filter_by_resources(
+                    remote_view, args.min_cpu, args.min_ram, args.min_storage, args.min_gpu,
+                    b_cpu, b_ram, b_sto, b_gpu, sc_cpu, sc_ram, sc_sto, sc_gpu
+                )
                 if not remote_pass.empty:
                     out = sort_candidates(remote_pass, args.sort) if args.sort != "none" else remote_pass
                     if args.limit > 0: out = out.head(args.limit)
@@ -483,7 +609,9 @@ def main():
                         "results": out.fillna(np.nan).replace({np.nan: None}).to_dict(orient="records"),
                     }
                     print("\n=== RESULTS (Hilbert window REMOTE via CH) ===")
-                    cols = ["ip","origin","cpu","ram","storage","gpu","price","score"]
+                    cols = ["ip","origin","cpu","ram","storage","gpu",
+                            "price_per_cpu","price_per_ram","price_per_storage","price_per_gpu",
+                            "score_per_cpu","score_per_ram","score_per_storage","score_per_gpu"]
                     print(pd.DataFrame(payload["results"]).set_index("name")[cols].to_string())
                     if args.http_serve: serve_json_forever(payload, args.http_host, args.http_port, args.http_path)
                     return
