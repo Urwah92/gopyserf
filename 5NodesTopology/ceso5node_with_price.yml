@@ -3,8 +3,7 @@ name: century
 topology:
   nodes:
     central_switch:
-      kind: ceos
-      image: testing954/ceos:4.28.0F
+      kind: ovs-bridge
 
     serf1:
       kind: linux
