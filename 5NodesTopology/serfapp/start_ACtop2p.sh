@@ -9,9 +9,9 @@
   -http-port 4042 \
   -http-path /members \
   -members-file ./members.json \
+  -buyers-file ./buyers.json \
   -interval 50s \
   -health-interval 5s
-
 
 
 
