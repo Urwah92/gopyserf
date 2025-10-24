@@ -34,7 +34,6 @@ SLEEP_BEFORE_CONF=30              # seconds before running conf scripts
 
 # Host scripts (must exist in current dir)
 SCRIPT_IP="./ipaddressing.sh"
-SCRIPT_SETUP="./setup_nodes.sh"
 SCRIPT_SERF_START="./serf_agents_start.sh"
 SCRIPT_SERF_JOIN="./serf_agents_joining.sh"
 
@@ -166,7 +165,6 @@ deploy_topology
 
 # Host-side scripts
 run_host_script "$SCRIPT_IP"
-run_host_script "$SCRIPT_SETUP"
 run_host_script "$SCRIPT_SERF_START"
 run_host_script "$SCRIPT_SERF_JOIN"
 log "Sleeping ${SLEEP_AFTER_JOIN}s after join..."
