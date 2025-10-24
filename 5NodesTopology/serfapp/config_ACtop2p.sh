@@ -8,8 +8,8 @@
   -http-host 0.0.0.0 \
   -http-port 4042 \
   -http-path /members \
-  -members-file ./members.json \
-  -buyers-file ./buyers.json \
+  -members-file ./sellers.json \
+  -buyers-file ./buy.json \
   -interval 50s \
   -health-interval 5s
 
