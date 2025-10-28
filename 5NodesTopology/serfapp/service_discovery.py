@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-multi_stage_hilbert_router_rtt_then_hilbert_http.py
+service_discovery_v3.py
 
 RTT-first, then raw-Hilbert widening. At each step:
   1) Check LOCAL members (from Serf tags). If any pass resources -> STOP and return them.
@@ -9,18 +9,14 @@ RTT-first, then raw-Hilbert widening. At each step:
 
 NO merging local+remote results; preference is strictly local-first on each step.
 
-Example:
-  python3 service_discovery.py \
-    --query-node clab-century-serf2 \
-    --geom-url http://172.20.20.7:4040/cluster-status \
-    --rtt-threshold-ms 12 \
-    --pct-start 0.02 --max-steps 6 \
-    --min-cpu 16 --min-ram 32 --min-storage 1000 --min-gpu 1 \
-    --budget-per-cpu 3 --budget-per-ram 1 --budget-per-storage 0.01 --budget-per-gpu 10 \
-    --min-score-per-cpu 0.7 --min-score-per-ram 0.5 --min-score-per-storage 0.5 --min-score-per-gpu 0.6 \
-    --sort score_per_cpu --limit 10 \
-    --rpc-addr 127.0.0.1:7373 --timeout-s 8 \
-    --http-serve --http-host 0.0.0.0 --http-port 4041 --http-path /hilbert-output
+Example (overrides are optional):
+    python3 service_discovery.py \
+        --rtt-threshold-ms 12 \
+        --rpc-addr 127.0.0.1:7373 --timeout-s 8 \
+        --sort score_per_cpu --limit 10 \
+        --http-serve --http-host 0.0.0.0 --http-port 4041 --http-path /hilbert-output \
+        --buyer-url http://127.0.0.1:8090/buyer
+    # (query node auto from /opt/serfapp/node.json; geom-url auto from eth0:4040/cluster-status)
 
 /cluster-status must include per node:
   - name: str
@@ -28,7 +24,7 @@ Example:
   - rtts: dict[name->ms]
 """
 
-import argparse, json, math, subprocess
+import argparse, json, math, subprocess, os, re
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -38,6 +34,10 @@ from hilbertcurve.hilbertcurve import HilbertCurve
 DEFAULT_SERF_RPC = "127.0.0.1:7373"
 DEFAULT_TIMEOUT_S = 8
 NET_P_BITS = 14
+NODE_JSON_PATH = "/opt/serfapp/node.json"
+GEOM_PORT = 4040
+GEOM_PATH = "/cluster-status"
+ETH_IFACE = "eth0"
 
 # ----------------------------- I/O -----------------------------
 def load_geometry(url: str, timeout: int = 5) -> List[Dict[str, Any]]:
@@ -76,11 +76,52 @@ def _to_float(v) -> float:
     except Exception:
         return float("nan")
 
+# --------- Helpers to auto-fill query-node and geom-url ----------
+def read_node_name_from_json(path: str = NODE_JSON_PATH) -> Optional[str]:
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+        name = data.get("node_name")
+        if isinstance(name, str) and name.strip():
+            return name.strip()
+    except Exception as e:
+        print(f"[auto] could not read node_name from {path}: {e}")
+    return None
+
+def get_eth_ipv4_address(iface: str = ETH_IFACE) -> Optional[str]:
+    """
+    Parse IPv4 from: ip -4 -o addr show dev eth0
+    Output sample:
+      2: eth0    inet 172.20.20.7/24 brd 172.20.20.255 scope global eth0
+    """
+    try:
+        res = subprocess.run(
+            ["ip", "-4", "-o", "addr", "show", "dev", iface],
+            capture_output=True, text=True, check=True
+        )
+        line = res.stdout.strip().splitlines()[0] if res.stdout.strip() else ""
+        # find 'inet A.B.C.D/..'
+        m = re.search(r"\binet\s+(\d+\.\d+\.\d+\.\d+)", line)
+        if m:
+            return m.group(1)
+    except Exception as e:
+        print(f"[auto] could not get IPv4 of {iface}: {e}")
+    return None
+
+def build_geom_url_from_eth0(port: int = GEOM_PORT, path: str = GEOM_PATH) -> Optional[str]:
+    ip = get_eth_ipv4_address(ETH_IFACE)
+    if not ip:
+        return None
+    # ensure leading slash for path
+    if not path.startswith("/"):
+        path = "/" + path
+    return f"http://{ip}:{port}{path}"
+
 # --------- Local resources from Serf members (LAN) ----------
 def get_lan_members(rpc_addr: str) -> pd.DataFrame:
     """
     Returns local members (no -wan) with ip + resource tags.
-    Columns: name, ip, cpu, ram, storage, gpu,
+    Columns: name, ip, cpu, ram (float), storage, gpu,
              price_per_cpu, price_per_ram, price_per_storage, price_per_gpu,
              score_per_cpu, score_per_ram, score_per_storage, score_per_gpu
     """
@@ -116,7 +157,7 @@ def get_lan_members(rpc_addr: str) -> pd.DataFrame:
             "name": str(name),
             "ip": ip,
             "cpu": _to_int(tags.get("cpu")),
-            "ram": _to_int(tags.get("ram")),
+            "ram": _to_float(tags.get("ram")),           # <<< RAM as float
             "storage": _to_int(tags.get("storage")),
             "gpu": _to_int(tags.get("gpu")),
             "price_per_cpu": _to_float(tags.get("price_per_cpu")),
@@ -220,7 +261,7 @@ def parse_ch_answer(text: str, allow: set) -> pd.DataFrame:
                 "name": nm,
                 "ip": str(rec.get("ip") or rec.get("IP") or ""),
                 "cpu": _to_int(rec.get("cpu") or rec.get("CPU")),
-                "ram": _to_int(rec.get("ram") or rec.get("RAM")),
+                "ram": _to_float(rec.get("ram") or rec.get("RAM")),  # <<< RAM as float
                 "storage": _to_int(rec.get("storage") or rec.get("Storage")),
                 "gpu": _to_int(rec.get("gpu") or rec.get("GPU")),
                 # per-unit fields (snake_case or CamelCase)
@@ -297,7 +338,7 @@ def _nan_to_zero(series: pd.Series) -> pd.Series:
 def filter_by_resources(
     df: pd.DataFrame, min_cpu:int, min_ram:int, min_storage:int, min_gpu:int,
     budget_cpu:float=0.0, budget_ram:float=0.0, budget_storage:float=0.0, budget_gpu:float=0.0,
-    min_sc_cpu:float=0.0, min_sc_ram:float=0.0, min_sc_storage:float=0.0, min_sc_gpu:float=0.0
+    min_sc_cpu:float=0.0, min_sc_ram:float=0.0, min_sc_storage: float=0.0, min_sc_gpu: float=0.0
 ) -> pd.DataFrame:
     if df.empty: return df
     x = df.copy()
@@ -316,7 +357,7 @@ def filter_by_resources(
 
     mask = (
         ((min_cpu<=0)     | (x["cpu"]     >= min_cpu)) &
-        ((min_ram<=0)     | (x["ram"]     >= min_ram)) &
+        ((min_ram<=0)     | (x["ram"]     >= min_ram)) &   # ram is float; compare to int OK
         ((min_storage<=0) | (x["storage"] >= min_storage)) &
         ((min_gpu<=0)     | (x["gpu"]     >= min_gpu)) &
         ((budget_cpu<=0)      | (ppc  <= budget_cpu)) &
@@ -331,7 +372,7 @@ def filter_by_resources(
     return x.loc[mask].copy()
 
 def sort_candidates(x: pd.DataFrame, key: str) -> pd.DataFrame:
-    if x.empty or key == "none": 
+    if x.empty or key == "none":
         return x
     # Sorting rules: higher is better for resources and scores; lower is better for prices.
     ascending = True
@@ -382,11 +423,23 @@ def serve_json_forever(payload: dict, host: str, port: int, path: str):
     finally:
         httpd.server_close(); print("[http] server stopped")
 
+def load_buyer(url: str, timeout: int = 5) -> dict:
+    import urllib.request, urllib.error
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as resp:
+            return json.load(resp)
+    except urllib.error.HTTPError as e:
+        print(f"[buyer] HTTP error {e.code} from {url}")
+    except Exception as e:
+        print(f"[buyer] fetch error from {url}: {e}")
+    return {}
+
 # --------------------------- Main -----------------------------
 def main():
     ap = argparse.ArgumentParser(description="RTT-first, then raw-Hilbert widening. Local checked first, remote via CH only if locals fail. No merging.")
-    ap.add_argument("--query-node", required=True)
-    ap.add_argument("--geom-url", required=True, help="HTTP /cluster-status (name, coordinate.Vec, rtts)")
+    # Made optional: will be auto-filled if not given
+    ap.add_argument("--query-node", default="", help="(optional) overrides auto-detected node_name from /opt/serfapp/node.json")
+    ap.add_argument("--geom-url", default="", help="(optional) overrides auto http://<eth0-ip>:4040/cluster-status")
     ap.add_argument("--rtt-threshold-ms", type=float, required=True, help="RTT cutoff for Phase A")
 
     # Serf / CH
@@ -429,8 +482,77 @@ def main():
     ap.add_argument("--http-host", default="0.0.0.0")
     ap.add_argument("--http-port", type=int, default=4041)
     ap.add_argument("--http-path", default="/hilbert-output")
+    ap.add_argument("--buyer-url", default="", help="Optional: http://HOST:PORT/buyer. If set, overrides min-*, budget-per-*, and min-score-per-* from buyer request.")
 
     args = ap.parse_args()
+
+    # ---- Auto-fill query-node from /opt/serfapp/node.json if not provided ----
+    if not args.query_node:
+        auto_node = read_node_name_from_json(NODE_JSON_PATH)
+        if not auto_node:
+            raise SystemExit(f"could not auto-detect query node from {NODE_JSON_PATH}; use --query-node to override")
+        args.query_node = auto_node
+        print(f"[auto] query-node: {args.query_node} (from {NODE_JSON_PATH})")
+
+    # ---- Auto-build geom-url as http://<eth0-ip>:4040/cluster-status if not provided ----
+    if not args.geom_url:
+        auto_geom = build_geom_url_from_eth0(GEOM_PORT, GEOM_PATH)
+        if not auto_geom:
+            raise SystemExit(f"could not auto-build geom-url from {ETH_IFACE}; use --geom-url to override")
+        args.geom_url = auto_geom
+        print(f"[auto] geom-url: {args.geom_url} (from {ETH_IFACE})")
+
+    # --- OPTIONAL: auto-pick buyer thresholds from emitter ---
+    if args.buyer_url:
+        buyer = load_buyer(args.buyer_url, timeout=5)
+        res = buyer.get("resources") or {}
+        # Expecting keys: vcpu, ram, storage, vgpu (each with demand_per_unit, score, budget)
+        def _get(field, key):
+            try:
+                v = res.get(field, {}).get(key, None)
+                return v
+            except Exception:
+                return None
+
+        # Demands -> minimums
+        min_cpu = int(_get("vcpu", "demand_per_unit") or 0)
+        min_ram = int(_get("ram", "demand_per_unit") or 0)
+        min_storage = int(_get("storage", "demand_per_unit") or 0)
+        min_gpu = int(_get("vgpu", "demand_per_unit") or 0)
+
+        # Per-unit budgets
+        b_cpu = float(_get("vcpu", "budget") or 0.0)
+        b_ram = float(_get("ram", "budget") or 0.0)
+        b_sto = float(_get("storage", "budget") or 0.0)
+        b_gpu = float(_get("vgpu", "budget") or 0.0)
+
+        # Per-unit score minimums
+        sc_cpu = float(_get("vcpu", "score") or 0.0)
+        sc_ram = float(_get("ram", "score") or 0.0)
+        sc_sto = float(_get("storage", "score") or 0.0)
+        sc_gpu = float(_get("vgpu", "score") or 0.0)
+
+        # Override argparse values (only the "takes from user" part)
+        args.min_cpu = max(args.min_cpu, min_cpu)
+        args.min_ram = max(args.min_ram, min_ram)
+        args.min_storage = max(args.min_storage, min_storage)
+        args.min_gpu = max(args.min_gpu, min_gpu)
+
+        # If budgets/scores are supplied, use them (non-zero wins)
+        if b_cpu > 0: args.budget_per_cpu = b_cpu
+        if b_ram > 0: args.budget_per_ram = b_ram
+        if b_sto > 0: args.budget_per_storage = b_sto
+        if b_gpu > 0: args.budget_per_gpu = b_gpu
+
+        if sc_cpu > 0: args.min_score_per_cpu = sc_cpu
+        if sc_ram > 0: args.min_score_per_ram = sc_ram
+        if sc_sto > 0: args.min_score_per_storage = sc_sto
+        if sc_gpu > 0: args.min_score_per_gpu = sc_gpu
+
+        print(f"[buyer] loaded from {args.buyer_url}: "
+              f"min(cpu={args.min_cpu}, ram={args.min_ram}, storage={args.min_storage}, gpu={args.min_gpu}); "
+              f"budget(cpu={args.budget_per_cpu}, ram={args.budget_per_ram}, storage={args.budget_per_storage}, gpu={args.budget_per_gpu}); "
+              f"score_min(cpu={args.min_score_per_cpu}, ram={args.min_score_per_ram}, storage={args.min_score_per_storage}, gpu={args.min_score_per_gpu})")
 
     # Load geometry + RTTs + local LAN members
     nodes = load_geometry(args.geom_url)

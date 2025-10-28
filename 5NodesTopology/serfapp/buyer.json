@@ -1,0 +1,9 @@
+{
+  "ip": "10.0.1.11",
+  "resources": {
+    "vcpu":    {"demand_per_unit": 3, "score": 0.1, "budget": 10},
+    "ram":     {"demand_per_unit": 10, "score": 2.0, "budget": 10},
+    "storage": {"demand_per_unit": 0, "score": 0.0, "budget": 10},
+    "vgpu":    {"demand_per_unit": 0, "score": 0.0, "budget": 10}
+  }
+}

@@ -7,7 +7,7 @@ topology:
 
     serf1:
       kind: linux
-      image:  abdullahmuzlim279/k3s-serf-node:pyRQ
+      image:  abdullahmuzlim279/k3s-serf-node:warmcache
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -16,6 +16,12 @@ topology:
         - /dev:/dev
       cmd: >
         bash -c '
+          set -e
+          ulimit -n 65536
+          sysctl -w fs.inotify.max_user_instances=8192
+          sysctl -w fs.inotify.max_user_watches=524288
+          sysctl -w fs.file-max=2097152
+          exec > >(tee /var/log/startup.log) 2>&1
           command -v k3s >/dev/null 2>&1 || (
             apt-get update &&
             apt-get install -y curl python3 python3-pip &&
@@ -35,10 +41,25 @@ topology:
           sleep 15
           chmod 666 /etc/rancher/k3s/k3s.yaml          
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          
+          echo "Waiting for containerd to be ready..."
+          sleep 10
+          until /usr/local/bin/k3s ctr version >/dev/null 2>&1; do
+              echo "  containerd not yet ready, retrying..."
+              sleep 3
+          done
+          echo "Containerd is ready."
+
+          echo "Importing cached images into containerd..."
+          for f in /opt/k3s-images/*.tar; do
+              echo "Loading $f ..."
+              /usr/local/bin/k3s ctr images import "$f" || true
+          done
+
+
+          
           #ip route del default via 10.0.1.1 dev eth1
           #ip route add default via 172.20.20.1 dev eth0
-          sleep 150        
-          liqoctl install k3s --kubeconfig /etc/rancher/k3s/k3s.yaml --cluster-id serf1
           k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
           k3s kubectl apply -f /tmp/service-account.yaml
           k3s kubectl apply -f /tmp/cluster-role.yaml
@@ -47,7 +68,7 @@ topology:
           k3s kubectl apply -f /tmp/ram_price.yaml
           k3s kubectl apply -f /tmp/storage_price.yaml
           k3s kubectl apply -f /tmp/vcpu_price.yaml
-          k3s kubectl apply -f /tmp/vgpu_price.yaml          
+          k3s kubectl apply -f /tmp/vgpu_price.yaml                
           sudo mv /etc/rancher/k3s/k3s.yaml ~/.kube/config
           sudo chown $(whoami):$(whoami) ~/.kube/config
           sudo chmod 600 ~/.kube/config
@@ -56,7 +77,7 @@ topology:
 
     serf2:
       kind: linux
-      image:  abdullahmuzlim279/k3s-serf-node:pyRQ
+      image:  abdullahmuzlim279/k3s-serf-node:warmcache
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -65,6 +86,12 @@ topology:
         - /dev:/dev
       cmd: >
         bash -c '
+          set -e
+          ulimit -n 65536
+          sysctl -w fs.inotify.max_user_instances=8192
+          sysctl -w fs.inotify.max_user_watches=524288
+          sysctl -w fs.file-max=2097152
+          exec > >(tee /var/log/startup.log) 2>&1
           command -v k3s >/dev/null 2>&1 || (
             apt-get update &&
             apt-get install -y curl python3 python3-pip &&
@@ -84,10 +111,22 @@ topology:
           sleep 15
           chmod 666 /etc/rancher/k3s/k3s.yaml          
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          
+          echo "Waiting for containerd to be ready..."
+          sleep 10
+          until /usr/local/bin/k3s ctr version >/dev/null 2>&1; do
+              echo "  containerd not yet ready, retrying..."
+              sleep 3
+          done
+          echo "Containerd is ready."
+
+          echo "Importing cached images into containerd..."
+          for f in /opt/k3s-images/*.tar; do
+              echo "Loading $f ..."
+              /usr/local/bin/k3s ctr images import "$f" || true
+          done
           #ip route del default via 10.0.1.1 dev eth1
-          #ip route add default via 172.20.20.1 dev eth0
-          sleep 150        
-          liqoctl install k3s --kubeconfig /etc/rancher/k3s/k3s.yaml --cluster-id serf1
+          #ip route add default via 172.20.20.1 dev eth0   
           k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
           k3s kubectl apply -f /tmp/service-account.yaml
           k3s kubectl apply -f /tmp/cluster-role.yaml
@@ -96,7 +135,7 @@ topology:
           k3s kubectl apply -f /tmp/ram_price.yaml
           k3s kubectl apply -f /tmp/storage_price.yaml
           k3s kubectl apply -f /tmp/vcpu_price.yaml
-          k3s kubectl apply -f /tmp/vgpu_price.yaml
+          k3s kubectl apply -f /tmp/vgpu_price.yaml   
           
           sudo mv /etc/rancher/k3s/k3s.yaml ~/.kube/config
           sudo chown $(whoami):$(whoami) ~/.kube/config
@@ -106,7 +145,7 @@ topology:
 
     serf3:
       kind: linux
-      image:  abdullahmuzlim279/k3s-serf-node:pyRQ
+      image:  abdullahmuzlim279/k3s-serf-node:warmcache
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -115,6 +154,12 @@ topology:
         - /dev:/dev
       cmd: >
         bash -c '
+          set -e
+          ulimit -n 65536
+          sysctl -w fs.inotify.max_user_instances=8192
+          sysctl -w fs.inotify.max_user_watches=524288
+          sysctl -w fs.file-max=2097152
+          exec > >(tee /var/log/startup.log) 2>&1
           command -v k3s >/dev/null 2>&1 || (
             apt-get update &&
             apt-get install -y curl python3 python3-pip &&
@@ -134,10 +179,23 @@ topology:
           sleep 15
           chmod 666 /etc/rancher/k3s/k3s.yaml          
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          
+          echo "Waiting for containerd to be ready..."
+          sleep 10
+          until /usr/local/bin/k3s ctr version >/dev/null 2>&1; do
+              echo "  containerd not yet ready, retrying..."
+              sleep 3
+          done
+          echo "Containerd is ready."
+
+          echo "Importing cached images into containerd..."
+          for f in /opt/k3s-images/*.tar; do
+              echo "Loading $f ..."
+              /usr/local/bin/k3s ctr images import "$f" || true
+          done
+          
           #ip route del default via 10.0.1.1 dev eth1
           #ip route add default via 172.20.20.1 dev eth0
-          sleep 150        
-          liqoctl install k3s --kubeconfig /etc/rancher/k3s/k3s.yaml --cluster-id serf1
           k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
           k3s kubectl apply -f /tmp/service-account.yaml
           k3s kubectl apply -f /tmp/cluster-role.yaml
@@ -146,7 +204,7 @@ topology:
           k3s kubectl apply -f /tmp/ram_price.yaml
           k3s kubectl apply -f /tmp/storage_price.yaml
           k3s kubectl apply -f /tmp/vcpu_price.yaml
-          k3s kubectl apply -f /tmp/vgpu_price.yaml
+          k3s kubectl apply -f /tmp/vgpu_price.yaml   
           
           sudo mv /etc/rancher/k3s/k3s.yaml ~/.kube/config
           sudo chown $(whoami):$(whoami) ~/.kube/config
@@ -156,7 +214,7 @@ topology:
 
     serf4:
       kind: linux
-      image:  abdullahmuzlim279/k3s-serf-node:pyRQ
+      image:  abdullahmuzlim279/k3s-serf-node:warmcache
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -165,6 +223,12 @@ topology:
         - /dev:/dev
       cmd: >
         bash -c '
+          set -e
+          ulimit -n 65536
+          sysctl -w fs.inotify.max_user_instances=8192
+          sysctl -w fs.inotify.max_user_watches=524288
+          sysctl -w fs.file-max=2097152
+          exec > >(tee /var/log/startup.log) 2>&1
           command -v k3s >/dev/null 2>&1 || (
             apt-get update &&
             apt-get install -y curl python3 python3-pip &&
@@ -184,10 +248,21 @@ topology:
           sleep 15
           chmod 666 /etc/rancher/k3s/k3s.yaml          
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          echo "Waiting for containerd to be ready..."
+          sleep 10
+          until /usr/local/bin/k3s ctr version >/dev/null 2>&1; do
+              echo "  containerd not yet ready, retrying..."
+              sleep 3
+          done
+          echo "Containerd is ready."
+
+          echo "Importing cached images into containerd..."
+          for f in /opt/k3s-images/*.tar; do
+              echo "Loading $f ..."
+              /usr/local/bin/k3s ctr images import "$f" || true
+          done
           #ip route del default via 10.0.1.1 dev eth1
           #ip route add default via 172.20.20.1 dev eth0
-          sleep 150        
-          liqoctl install k3s --kubeconfig /etc/rancher/k3s/k3s.yaml --cluster-id serf1
           k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
           k3s kubectl apply -f /tmp/service-account.yaml
           k3s kubectl apply -f /tmp/cluster-role.yaml
@@ -196,7 +271,7 @@ topology:
           k3s kubectl apply -f /tmp/ram_price.yaml
           k3s kubectl apply -f /tmp/storage_price.yaml
           k3s kubectl apply -f /tmp/vcpu_price.yaml
-          k3s kubectl apply -f /tmp/vgpu_price.yaml
+          k3s kubectl apply -f /tmp/vgpu_price.yaml   
           
           sudo mv /etc/rancher/k3s/k3s.yaml ~/.kube/config
           sudo chown $(whoami):$(whoami) ~/.kube/config
@@ -206,7 +281,7 @@ topology:
 
     serf5:
       kind: linux
-      image:  abdullahmuzlim279/k3s-serf-node:pyRQ
+      image:  abdullahmuzlim279/k3s-serf-node:warmcache
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -215,6 +290,12 @@ topology:
         - /dev:/dev
       cmd: >
         bash -c '
+          set -e
+          ulimit -n 65536
+          sysctl -w fs.inotify.max_user_instances=8192
+          sysctl -w fs.inotify.max_user_watches=524288
+          sysctl -w fs.file-max=2097152
+          exec > >(tee /var/log/startup.log) 2>&1
           command -v k3s >/dev/null 2>&1 || (
             apt-get update &&
             apt-get install -y curl python3 python3-pip &&
@@ -234,10 +315,23 @@ topology:
           sleep 15
           chmod 666 /etc/rancher/k3s/k3s.yaml          
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          
+          
+          echo "Waiting for containerd to be ready..."
+          sleep 10
+          until /usr/local/bin/k3s ctr version >/dev/null 2>&1; do
+              echo "  containerd not yet ready, retrying..."
+              sleep 3
+          done
+          echo "Containerd is ready."
+
+          echo "Importing cached images into containerd..."
+          for f in /opt/k3s-images/*.tar; do
+              echo "Loading $f ..."
+              /usr/local/bin/k3s ctr images import "$f" || true
+          done
           #ip route del default via 10.0.1.1 dev eth1
           #ip route add default via 172.20.20.1 dev eth0
-          sleep 150        
-          liqoctl install k3s --kubeconfig /etc/rancher/k3s/k3s.yaml --cluster-id serf1
           k3s kubectl apply -f /tmp/qos-controller-daemonset.yaml
           k3s kubectl apply -f /tmp/service-account.yaml
           k3s kubectl apply -f /tmp/cluster-role.yaml
@@ -246,8 +340,7 @@ topology:
           k3s kubectl apply -f /tmp/ram_price.yaml
           k3s kubectl apply -f /tmp/storage_price.yaml
           k3s kubectl apply -f /tmp/vcpu_price.yaml
-          k3s kubectl apply -f /tmp/vgpu_price.yaml
-
+          k3s kubectl apply -f /tmp/vgpu_price.yaml   
           sudo mv /etc/rancher/k3s/k3s.yaml ~/.kube/config
           sudo chown $(whoami):$(whoami) ~/.kube/config
           sudo chmod 600 ~/.kube/config
