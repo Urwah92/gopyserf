@@ -1,0 +1,801 @@
+name: century
+
+topology:
+  nodes:
+    # ---------- L2 Switches ----------
+    switch_a:
+      kind: ovs-bridge
+    switch_b:
+      kind: ovs-bridge
+
+    # ---------- Router between the two OVS bridges ----------
+    rtr:
+      kind: linux
+      image: frrouting/frr:v7.5.1
+      binds:
+        - rtr/daemons:/etc/frr/daemons
+        - rtr/frr.conf:/etc/frr/frr.conf
+    serf1:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf1 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf2:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf2 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf3:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf3 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf4:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf4 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf5:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf5 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf6:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf6 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf7:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf7 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf8:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf8 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf9:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf9 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf10:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf10 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf11:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf11 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf12:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf12 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf13:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf13 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf14:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf14 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf15:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf15 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf16:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf16 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf17:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf17 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf18:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf18 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf19:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download	v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf19 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf20:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf20 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf21:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf21 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf22:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf22 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf23:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf23 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf24:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf24 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+    serf25:
+      kind: linux
+      image: abdullahmuzlim279/k3s-serf-node:warm
+      env:
+        CLAB_LINUX_PRIVILEGED: "true"
+      binds:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
+        - /lib/modules:/lib/modules:ro
+        - /dev:/dev
+      cmd: >
+        bash -c '
+          command -v k3s >/dev/null 2>&1 || (
+            apt-get update &&
+            apt-get install -y curl python3 python3-pip &&
+            curl -Lo /usr/local/bin/k3s https://github.com/k3s-io/k3s/releases/download/v1.32.4+k3s1/k3s &&
+            chmod +x /usr/local/bin/k3s &&
+            pip3 install flask requests kubernetes
+          );
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz;
+          install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl;
+          ip link set eth1 up;
+          sleep 15;
+          ip link set eth1 mtu 1400;
+          k3s server --node-name serf25 --disable traefik --disable-network-policy --snapshotter native &
+          sleep 15;
+          chmod 666 /etc/rancher/k3s/k3s.yaml || true;
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml;
+          sleep infinity
+        '
+
+  links:
+    # Router uplinks to both switches
+    - endpoints: ["switch_a:eth20", "rtr:eth1"]
+    - endpoints: ["switch_b:eth27", "rtr:eth2"]
+
+    # -------- serf1..serf12 on switch_a --------
+    - endpoints: ["switch_a:eth14",  "serf1:eth1"]
+    - endpoints: ["switch_a:eth22",  "serf2:eth1"]
+    - endpoints: ["switch_a:eth33",  "serf3:eth1"]
+    - endpoints: ["switch_a:eth44",  "serf4:eth1"]
+    - endpoints: ["switch_a:eth55",  "serf5:eth1"]
+    - endpoints: ["switch_a:eth66",  "serf6:eth1"]
+    - endpoints: ["switch_a:eth77",  "serf7:eth1"]
+    - endpoints: ["switch_a:eth85",  "serf8:eth1"]
+    - endpoints: ["switch_a:eth92",  "serf9:eth1"]
+    - endpoints: ["switch_a:eth10", "serf10:eth1"]
+    - endpoints: ["switch_a:eth16", "serf11:eth1"]
+    - endpoints: ["switch_a:eth12", "serf12:eth1"]
+
+    # -------- serf13..serf25 on switch_b --------
+    - endpoints: ["switch_b:eth15",  "serf13:eth1"]
+    - endpoints: ["switch_b:eth21",  "serf14:eth1"]
+    - endpoints: ["switch_b:eth32",  "serf15:eth1"]
+    - endpoints: ["switch_b:eth43",  "serf16:eth1"]
+    - endpoints: ["switch_b:eth54",  "serf17:eth1"]
+    - endpoints: ["switch_b:eth65",  "serf18:eth1"]
+    - endpoints: ["switch_b:eth76",  "serf19:eth1"]
+    - endpoints: ["switch_b:eth87",  "serf20:eth1"]
+    - endpoints: ["switch_b:eth98",  "serf21:eth1"]
+    - endpoints: ["switch_b:eth13", "serf22:eth1"]
+    - endpoints: ["switch_b:eth11", "serf23:eth1"]
+    - endpoints: ["switch_b:eth18", "serf24:eth1"]
+    - endpoints: ["switch_b:eth17", "serf25:eth1"]
+
