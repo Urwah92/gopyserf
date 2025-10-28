@@ -575,7 +575,7 @@ topology:
             chmod +x /usr/local/bin/k3s &&
             pip3 install flask requests kubernetes
           )
-          curl --fail -LS "https://github.com/liqotech/liqo/releases/download	v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz
           sudo install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl
           ip link set eth1 up
           # ip addr add 10.0.1.19/24 brd 10.0.1.255 dev eth1
@@ -640,7 +640,7 @@ topology:
             chmod +x /usr/local/bin/k3s &&
             pip3 install flask requests kubernetes
           )
-          curl --fail -LS "https://github.com/liqotech/liqo/releases/download	v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz
           sudo install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl
           ip link set eth1 up
           # ip addr add 10.0.1.20/24 brd 10.0.1.255 dev eth1
@@ -705,7 +705,7 @@ topology:
             chmod +x /usr/local/bin/k3s &&
             pip3 install flask requests kubernetes
           )
-          curl --fail -LS "https://github.com/liqotech/liqo/releases/download	v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz
           sudo install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl
           ip link set eth1 up
           # ip addr add 10.0.1.21/24 brd 10.0.1.255 dev eth1
@@ -770,7 +770,7 @@ topology:
             chmod +x /usr/local/bin/k3s &&
             pip3 install flask requests kubernetes
           )
-          curl --fail -LS "https://github.com/liqotech/liqo/releases/download	v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz
           sudo install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl
           ip link set eth1 up
           # ip addr add 10.0.1.22/24 brd 10.0.1.255 dev eth1
@@ -835,7 +835,7 @@ topology:
             chmod +x /usr/local/bin/k3s &&
             pip3 install flask requests kubernetes
           )
-          curl --fail -LS "https://github.com/liqotech/liqo/releases/download	v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz
+          curl --fail -LS "https://github.com/liqotech/liqo/releases/download/v1.0.0/liqoctl-linux-amd64.tar.gz" | tar -xz
           sudo install -o root -g root -m 0755 liqoctl /usr/local/bin/liqoctl
           ip link set eth1 up
           # ip addr add 10.0.1.23/24 brd 10.0.1.255 dev eth1
