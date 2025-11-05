@@ -4,8 +4,8 @@
 set -euo pipefail
 
 PREFIX="clab-century-serf"
-START=11
-END=25
+START=2
+END=5
 CONTAINER_APP_DIR="/opt/serfapp"
 CONF_SCRIPT="./config_ACtop2p.sh"
 

@@ -3,7 +3,7 @@ set -e
 
 LAB="century"   # <-- must match the 'name:' in your topology
 
-for i in $(seq 1 25); do
+for i in $(seq 1 5); do
   container="clab-${LAB}-serf${i}"
 
   if [ "$i" -le 12 ]; then

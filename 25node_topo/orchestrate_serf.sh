@@ -7,9 +7,9 @@ set -euo pipefail
 # ------------------ Defaults (override with flags) ------------------
 PREFIX="clab-century-serf"
 START=1
-END=25
-TOPO_FILE="ceso25node.yml"
-BRIDGE_NAME="switch_a"
+END=5
+TOPO_FILE="5node_topo.yml"
+BRIDGE_NAME="central_switch"
 
 SLEEP_AFTER_DEPLOY=8
 SLEEP_AFTER_JOIN=5

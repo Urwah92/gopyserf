@@ -9,7 +9,7 @@ set -euo pipefail
 # -------- Defaults (change via flags) --------
 PREFIX="clab-century-buyer"              # container name prefix (e.g., clab-century-buyer1)
 START=1                                  # first index
-END=10                                    # last index (START==END => single container)
+END=1                                   # last index (START==END => single container)
 CONTAINER_APP_DIR="/opt/serfapp"         # where scripts live inside container
 BUYER_SCRIPT="./config_buyer.sh"
 DISC_SCRIPT="./config_service_discovery_v2.sh"

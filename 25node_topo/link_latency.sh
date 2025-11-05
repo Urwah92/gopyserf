@@ -2,7 +2,7 @@
 
 echo "Configuring clab-dual-bridge-topology-host1 to host10..."
 
-for i in $(seq 1 25); do
+for i in $(seq 1 5); do
   HOST="clab-century-serf$i"
   IP_SUFFIX=$((10 + i))
   IP="10.0.1.$IP_SUFFIX"
@@ -23,7 +23,7 @@ done
 
 
 # Apply 100ms delay on the link facing br_left
-sudo tc qdisc add dev eth20 root netem delay 50ms
+#sudo tc qdisc add dev eth20 root netem delay 50ms
  
 # Apply 100ms delay on the link facing br_right (optional, if you want symmetric delay)
-sudo tc qdisc add dev eth27 root netem delay 50ms
+#sudo tc qdisc add dev eth27 root netem delay 50ms
