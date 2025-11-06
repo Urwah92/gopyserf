@@ -7,7 +7,7 @@ topology:
 
     serf1:
       kind: linux
-      image: abdullahmuzlim279/k3s-serf-node:warmcache
+      image: abdullahmuzlim279/k3s-serf-node:warmcache-test
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -105,7 +105,7 @@ topology:
 
     serf2:
       kind: linux
-      image: abdullahmuzlim279/k3s-serf-node:warmcache
+      image: abdullahmuzlim279/k3s-serf-node:warmcache-test
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -201,7 +201,7 @@ topology:
 
     serf3:
       kind: linux
-      image: abdullahmuzlim279/k3s-serf-node:warmcache
+      image: abdullahmuzlim279/k3s-serf-node:warmcache-test
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -297,7 +297,7 @@ topology:
 
     serf4:
       kind: linux
-      image: abdullahmuzlim279/k3s-serf-node:warmcache
+      image: abdullahmuzlim279/k3s-serf-node:warmcache-test
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
@@ -393,7 +393,7 @@ topology:
 
     serf5:
       kind: linux
-      image: abdullahmuzlim279/k3s-serf-node:warmcache
+      image: abdullahmuzlim279/k3s-serf-node:warmcache-test
       env:
         CLAB_LINUX_PRIVILEGED: "true"
       binds:
