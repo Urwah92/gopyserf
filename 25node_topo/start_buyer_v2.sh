@@ -28,7 +28,7 @@ END=1
 DELAY_SECS=5
 CONTAINER_APP_DIR="/opt/serfapp"
 BUYER_SCRIPT="config_buyer.sh"
-DISC_SCRIPT="config_service_discovery_v5.sh"
+DISC_SCRIPT="config_service_discovery_v6.sh"
 GEOM_PORT=4040
 GEOM_PATH="/cluster-status"
 
