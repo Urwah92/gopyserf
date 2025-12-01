@@ -2,10 +2,10 @@
 
 echo "Configuring clab-dual-bridge-topology-host1 to host10..."
 
-for i in $(seq 13 25); do
+for i in $(seq 1 12); do
   HOST="clab-century-serf$i"
   IP_SUFFIX=$((10 + i))
-  IP="10.0.2.$IP_SUFFIX"
+  IP="10.0.1.$IP_SUFFIX"
 
   #echo "[$HOST] Setting up eth1 with IP $IP/24"
 

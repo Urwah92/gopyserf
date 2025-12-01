@@ -1,0 +1,67 @@
+all:
+  vars:
+    # The generated inventory is assumed to be used from the clab host.
+    # Hence no http proxy should be used. Therefore we make sure the http
+    # module does not attempt using any global http proxy.
+    ansible_httpapi_use_proxy: false
+  children:
+    linux:
+      hosts:
+        clab-century-rtr:
+          ansible_host: 172.20.20.13
+        clab-century-serf1:
+          ansible_host: 172.20.20.17
+        clab-century-serf10:
+          ansible_host: 172.20.20.11
+        clab-century-serf11:
+          ansible_host: 172.20.20.15
+        clab-century-serf12:
+          ansible_host: 172.20.20.6
+        clab-century-serf13:
+          ansible_host: 172.20.20.18
+        clab-century-serf14:
+          ansible_host: 172.20.20.4
+        clab-century-serf15:
+          ansible_host: 172.20.20.26
+        clab-century-serf16:
+          ansible_host: 172.20.20.9
+        clab-century-serf17:
+          ansible_host: 172.20.20.22
+        clab-century-serf18:
+          ansible_host: 172.20.20.20
+        clab-century-serf19:
+          ansible_host: 172.20.20.21
+        clab-century-serf2:
+          ansible_host: 172.20.20.12
+        clab-century-serf20:
+          ansible_host: 172.20.20.14
+        clab-century-serf21:
+          ansible_host: 172.20.20.8
+        clab-century-serf22:
+          ansible_host: 172.20.20.2
+        clab-century-serf23:
+          ansible_host: 172.20.20.10
+        clab-century-serf24:
+          ansible_host: 172.20.20.23
+        clab-century-serf25:
+          ansible_host: 172.20.20.19
+        clab-century-serf3:
+          ansible_host: 172.20.20.5
+        clab-century-serf4:
+          ansible_host: 172.20.20.16
+        clab-century-serf5:
+          ansible_host: 172.20.20.27
+        clab-century-serf6:
+          ansible_host: 172.20.20.24
+        clab-century-serf7:
+          ansible_host: 172.20.20.3
+        clab-century-serf8:
+          ansible_host: 172.20.20.25
+        clab-century-serf9:
+          ansible_host: 172.20.20.7
+    ovs-bridge:
+      hosts:
+        clab-century-switch_a:
+          ansible_host: 
+        clab-century-switch_b:
+          ansible_host: 

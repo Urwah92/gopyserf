@@ -8,7 +8,7 @@ set -euo pipefail
 PREFIX="clab-century-serf"
 START=1
 END=25
-TOPO_FILE="ceso25node.yml"
+TOPO_FILE="25node_update.yml"
 BRIDGE_NAME="switch_a"
 
 SLEEP_AFTER_DEPLOY=8
@@ -130,15 +130,17 @@ file_exists_in_container() {
 }
 
 # ------------------ Start ------------------
-require_cmd docker
-require_cmd clab
-ensure_openvswitch
-ensure_bridge "$BRIDGE_NAME"
+#require_cmd docker
+#require_cmd clab
+#ensure_openvswitch
+#ensure_bridge "$BRIDGE_NAME"
 
 deploy_topology
 
 # Host-side scripts
 run_host_script "$SCRIPT_IP"
+#./link_latency.sh
+#./link-latency2.sh
 run_host_script "$SCRIPT_SERF_START"
 run_host_script "$SCRIPT_SERF_JOIN"
 log "Sleeping ${SLEEP_AFTER_JOIN}s after join..."
